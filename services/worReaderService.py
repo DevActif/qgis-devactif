@@ -1,4 +1,5 @@
-from .config.projections import CRSPREFIX
+from ..config.projections import CRSPREFIX
+
 
 def readCrsFromWor(worFile, feedback):
     with open(worFile, "r") as f:
@@ -16,4 +17,3 @@ def readCrsFromWor(worFile, feedback):
     feedback.pushInfo("found coordSys: {}".format(crsString))
     coordsysList = crsString.split(", ")
     return coordsysList
-
