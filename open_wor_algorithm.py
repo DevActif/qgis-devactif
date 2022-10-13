@@ -79,6 +79,22 @@ class OpenWorAlgorithm(QgsProcessingAlgorithm):
 
             )
         )
+    def prepareAlgorithm(self, parameters, context, feedback):
+        worFile = self.parameterAsFile(parameters, self.INPUT, context)
+
+        coordsysList = readCrsFromWor(worFile, feedback)
+        epsgId = extractEpsgId(coordsysList, feedback)
+
+        if(not epsgId):
+            return False
+
+        self.crs.createFromOgcWmsCrs(epsgId)
+
+        if(not self.crs.isValid()):
+            feedback.reportError("The crs is not valid",True)
+            return False
+
+        return True
 
     def processAlgorithm(self, parameters, context, feedback):
         """
