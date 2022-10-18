@@ -1,7 +1,10 @@
 from ..config.projections import CRSPREFIX
+from qgis.core import (
+    QgsProcessingFeedback
+)
 
 
-def readCrsFromWor(worFile, feedback):
+def readCrsFromWor(worFile: str, feedback: QgsProcessingFeedback) -> list[str]:
     with open(worFile, "r") as f:
         line = f.readline()
         crsString = ""

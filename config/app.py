@@ -1,0 +1,2 @@
+RASTER = "raster"
+VECTOR = "vector"

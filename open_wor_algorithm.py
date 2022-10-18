@@ -30,15 +30,23 @@ __copyright__ = '(C) 2022 by DevActif'
 
 __revision__ = '$Format:%H$'
 
+import os
+
 from qgis.PyQt.QtCore import QCoreApplication
 from qgis.core import (
-                       QgsProcessingAlgorithm,
-                       QgsProcessingParameterFile,
-                       QgsProcessingOutputBoolean,
-                       QgsCoordinateReferenceSystem
-                       )
-from .epsgIdExtractor import extractEpsgId
-from .reader import readCrsFromWor
+    QgsProcessingAlgorithm,
+    QgsProcessingParameterFile,
+    QgsProcessingOutputMultipleLayers,
+    QgsCoordinateReferenceSystem,
+    QgsProject,
+    QgsProcessingException,
+    QgsProcessingContext
+)
+from .services.loadLayersService import createLayers, extractLayerName
+from .config.app import RASTER, VECTOR
+from .services.fileListService import getFilesToLoad
+from .services.epsgIdExtractorService import extractEpsgId
+from .services.worReaderService import readCrsFromWor
 
 
 class OpenWorAlgorithm(QgsProcessingAlgorithm):
@@ -50,11 +58,10 @@ class OpenWorAlgorithm(QgsProcessingAlgorithm):
     # used when calling the algorithm from another algorithm, or when
     # calling from the QGIS console.
 
-    INPUT = 'MapInfo workspace'
-    OUTPUT = "Success"
+    INPUT = 'Input'
+    OUTPUT = "Output"
 
     crs = QgsCoordinateReferenceSystem()
-
 
     def initAlgorithm(self, config):
         """
@@ -73,12 +80,12 @@ class OpenWorAlgorithm(QgsProcessingAlgorithm):
         )
 
         self.addOutput(
-            QgsProcessingOutputBoolean(
+            QgsProcessingOutputMultipleLayers(
                 self.OUTPUT,
-                self.tr("Success")
-
+                self.tr("Imported Layers")
             )
         )
+
     def prepareAlgorithm(self, parameters, context, feedback):
         worFile = self.parameterAsFile(parameters, self.INPUT, context)
 
@@ -91,8 +98,7 @@ class OpenWorAlgorithm(QgsProcessingAlgorithm):
         self.crs.createFromOgcWmsCrs(epsgId)
 
         if(not self.crs.isValid()):
-            feedback.reportError("The crs is not valid",True)
-            return False
+            raise QgsProcessingException("The crs is not valid")
 
         return True
 
@@ -100,29 +106,70 @@ class OpenWorAlgorithm(QgsProcessingAlgorithm):
         """
         Here is where the processing itself takes place.
         """
+        feedback.setProgress(0)
+        feedback.setProgressText("Changing CRS and ellipsoid")
 
-        # Compute the number of steps to display within the progress bar and
-        # get features from source
-        # total = 100.0 / source.featureCount() if source.featureCount() else 0
-        # features = source.getFeatures()
+        self.originalCRS = context.project().crs()
+        self.originalEllipsoid = context.project().ellipsoid()
 
-        # for current, feature in enumerate(features):
-            # Stop the algorithm if cancel button has been clicked
+        context.project().setCrs(self.crs, True)
 
+        feedback.pushInfo("original CRS is {}".format(self.originalCRS))
+        feedback.pushInfo("CRS is now {}".format(QgsProject.instance().crs()))
+        feedback.pushInfo(
+            "original ellipsoid is {}".format(self.originalEllipsoid))
+        feedback.pushInfo("Ellipsoid is now {}".format(
+            QgsProject.instance().ellipsoid()))
 
-            # Add a feature in the sink
-            # sink.addFeature(feature, QgsFeatureSink.FastInsert)
+        feedback.setProgressText("Listing files to load")
 
-            # Update the progress bar
-            # feedback.setProgress(int(current * total))
+        worFile = self.parameterAsFile(parameters, self.INPUT, context)
+        folder = os.path.dirname(worFile)
 
-        # Return the results of the algorithm. In this case our only result is
-        # the feature sink which contains the processed features, but some
-        # algorithms may return multiple feature sinks, calculated numeric
-        # statistics, etc. These should all be included in the returned
-        # dictionary, with keys matching the feature corresponding parameter
-        # or output names.
-        return {self.OUTPUT:True}
+        rasterToLoad = getFilesToLoad(folder, RASTER, feedback)
+        vectorToLoad = getFilesToLoad(folder, VECTOR, feedback)
+
+        if feedback.isCanceled():
+            self.resetCrs(context)
+            return False
+
+        feedback.setProgressText("Creating layers")
+
+        numLayers = len(rasterToLoad) + len(vectorToLoad)
+
+        if numLayers == 0:
+            feedback.pushError(
+                "There are no files to load from the base directory")
+            return False
+
+        outputLayers = list()
+
+        outputLayers = createLayers(
+            rasterToLoad, outputLayers, self.crs, feedback, RASTER, numLayers)
+
+        outputLayers = createLayers(vectorToLoad, outputLayers, self.crs, feedback, VECTOR, numLayers, step=len(
+            rasterToLoad))
+
+        feedback.pushInfo("{} layers found".format(len(outputLayers)))
+
+        if feedback.isCanceled():
+            self.resetCrs(context)
+            return False
+
+        context.project().addMapLayers(outputLayers)
+
+        # for name, layer in outputLayers.items():
+        #     feedback.pushDebugInfo("layer name is {}".format(name))
+        #     feedback.pushDebugInfo("layer is {}".format(layer))
+        #     feedback.pushDebugInfo("layer id is {}".format(layer.id()))
+        #     context.addLayerToLoadOnCompletion(
+        #         layer.id(), QgsProcessingContext.LayerDetails(name=name, project=context.project()))
+
+        return {self.OUTPUT: outputLayers}
+
+    def resetCrs(self, context):
+        context.project().setCrs(self.originalCRS)
+        context.project().setEllipsoid(self.originalEllipsoid)
 
     def name(self):
         """
@@ -132,31 +179,14 @@ class OpenWorAlgorithm(QgsProcessingAlgorithm):
         lowercase alphanumeric characters only and no spaces or other
         formatting characters.
         """
-        return 'OpenWor'
+        return 'openwor'
 
     def displayName(self):
         """
         Returns the translated algorithm name, which should be used for any
         user-visible display of the algorithm name.
         """
-        return self.tr(self.name())
-
-    def group(self):
-        """
-        Returns the name of the group this algorithm belongs to. This string
-        should be localised.
-        """
-        return self.tr(self.groupId())
-
-    def groupId(self):
-        """
-        Returns the unique ID of the group this algorithm belongs to. This
-        string should be fixed for the algorithm, and must not be localised.
-        The group id should be unique within each provider. Group id should
-        contain lowercase alphanumeric characters only and no spaces or other
-        formatting characters.
-        """
-        return ''
+        return self.tr("Open Wor")
 
     def tr(self, string):
         return QCoreApplication.translate('Processing', string)
