@@ -30,47 +30,21 @@ __copyright__ = '(C) 2022 by DevActif'
 
 __revision__ = '$Format:%H$'
 
-import os
-
 from qgis.PyQt.QtCore import QCoreApplication
 from qgis.core import (
-    QgsProcessingAlgorithm,
+    QgsProcessingMultiStepFeedback,
+    QgsProcessing,
     QgsProcessingParameterFile,
-    QgsProcessingOutputMultipleLayers,
-    QgsCoordinateReferenceSystem,
-    QgsProject,
-    QgsProcessingException,
-    QgsProcessingContext
-)
-from .services.loadLayersService import createLayers, extractLayerName
-from .config.app import RASTER, VECTOR
-from .services.fileListService import getFilesToLoad
-from .services.epsgIdExtractorService import extractEpsgId
-from .services.worReaderService import readCrsFromWor
+    QgsProcessingAlgorithm)
+import processing
 
 
 class OpenWorAlgorithm(QgsProcessingAlgorithm):
-    """
-    All Processing algorithms should extend the QgsProcessingAlgorithm
-    class.
-    """
-    # Constants used to refer to parameters and outputs. They will be
-    # used when calling the algorithm from another algorithm, or when
-    # calling from the QGIS console.
 
     INPUT = 'Input'
-    OUTPUT = "Output"
 
-    crs = QgsCoordinateReferenceSystem()
+    def initAlgorithm(self, config=None):
 
-    def initAlgorithm(self, config):
-        """
-        Here we define the inputs and output of the algorithm, along
-        with some other properties.
-        """
-
-        # We add the input vector features source. It can have any kind of
-        # geometry.
         self.addParameter(
             QgsProcessingParameterFile(
                 self.INPUT,
@@ -79,114 +53,37 @@ class OpenWorAlgorithm(QgsProcessingAlgorithm):
             )
         )
 
-        self.addOutput(
-            QgsProcessingOutputMultipleLayers(
-                self.OUTPUT,
-                self.tr("Imported Layers")
-            )
-        )
+    def processAlgorithm(self, parameters, context, model_feedback):
+        # Use a multi-step feedback, so that individual child algorithm progress reports are adjusted for the
+        # overall progress through the model
+        feedback = QgsProcessingMultiStepFeedback(2, model_feedback)
+        results = {}
+        outputs = {}
 
-    def prepareAlgorithm(self, parameters, context, feedback):
+        # Open Wor
         worFile = self.parameterAsFile(parameters, self.INPUT, context)
 
-        coordsysList = readCrsFromWor(worFile, feedback)
-        epsgId = extractEpsgId(coordsysList, feedback)
+        outputs['crsfromwor'] = processing.run(
+            'DevActif:crsfromwor', {'Input': worFile}, context=context, feedback=feedback, is_child_algorithm=True)
 
-        if(not epsgId):
-            return False
-
-        self.crs.createFromOgcWmsCrs(epsgId)
-
-        if(not self.crs.isValid()):
-            raise QgsProcessingException("The crs is not valid")
-
-        return True
-
-    def processAlgorithm(self, parameters, context, feedback):
-        """
-        Here is where the processing itself takes place.
-        """
-        feedback.setProgress(0)
-        feedback.setProgressText("Changing CRS and ellipsoid")
-
-        self.originalCRS = context.project().crs()
-        self.originalEllipsoid = context.project().ellipsoid()
-
-        context.project().setCrs(self.crs, True)
-
-        feedback.pushInfo("original CRS is {}".format(self.originalCRS))
-        feedback.pushInfo("CRS is now {}".format(QgsProject.instance().crs()))
-        feedback.pushInfo(
-            "original ellipsoid is {}".format(self.originalEllipsoid))
-        feedback.pushInfo("Ellipsoid is now {}".format(
-            QgsProject.instance().ellipsoid()))
-
-        feedback.setProgressText("Listing files to load")
-
-        worFile = self.parameterAsFile(parameters, self.INPUT, context)
-        folder = os.path.dirname(worFile)
-
-        rasterToLoad = getFilesToLoad(folder, RASTER, feedback)
-        vectorToLoad = getFilesToLoad(folder, VECTOR, feedback)
-
+        feedback.setCurrentStep(1)
         if feedback.isCanceled():
-            self.resetCrs(context)
-            return False
+            return {}
 
-        feedback.setProgressText("Creating layers")
-
-        numLayers = len(rasterToLoad) + len(vectorToLoad)
-
-        if numLayers == 0:
-            feedback.pushError(
-                "There are no files to load from the base directory")
-            return False
-
-        outputLayers = list()
-
-        outputLayers = createLayers(
-            rasterToLoad, outputLayers, self.crs, feedback, RASTER, numLayers)
-
-        outputLayers = createLayers(vectorToLoad, outputLayers, self.crs, feedback, VECTOR, numLayers, step=len(
-            rasterToLoad))
-
-        feedback.pushInfo("{} layers found".format(len(outputLayers)))
-
-        if feedback.isCanceled():
-            self.resetCrs(context)
-            return False
-
-        context.project().addMapLayers(outputLayers)
-
-        # for name, layer in outputLayers.items():
-        #     feedback.pushDebugInfo("layer name is {}".format(name))
-        #     feedback.pushDebugInfo("layer is {}".format(layer))
-        #     feedback.pushDebugInfo("layer id is {}".format(layer.id()))
-        #     context.addLayerToLoadOnCompletion(
-        #         layer.id(), QgsProcessingContext.LayerDetails(name=name, project=context.project()))
-
-        return {self.OUTPUT: outputLayers}
-
-    def resetCrs(self, context):
-        context.project().setCrs(self.originalCRS)
-        context.project().setEllipsoid(self.originalEllipsoid)
+        # Layers Loader
+        alg_params = {
+            'CRS': outputs['crsfromwor']['Crs'],
+            'INPUT': outputs['crsfromwor']['Folder']
+        }
+        outputs['LayersLoader'] = processing.run(
+            'DevActif:Layers Loader', alg_params, context=context, feedback=feedback, is_child_algorithm=True)
+        return results
 
     def name(self):
-        """
-        Returns the algorithm name, used for identifying the algorithm. This
-        string should be fixed for the algorithm, and must not be localised.
-        The name should be unique within each provider. Names should contain
-        lowercase alphanumeric characters only and no spaces or other
-        formatting characters.
-        """
         return 'openwor'
 
     def displayName(self):
-        """
-        Returns the translated algorithm name, which should be used for any
-        user-visible display of the algorithm name.
-        """
-        return self.tr("Open Wor")
+        return self.tr("Open wor")
 
     def tr(self, string):
         return QCoreApplication.translate('Processing', string)

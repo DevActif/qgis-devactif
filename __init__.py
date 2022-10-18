@@ -35,5 +35,5 @@ def classFactory(iface):  # pylint: disable=invalid-name
     :type iface: QgsInterface
     """
     #
-    from .open_wor import OpenWorPlugin
-    return OpenWorPlugin()
+    from .devactif import Devactif
+    return Devactif()

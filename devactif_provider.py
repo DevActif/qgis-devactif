@@ -31,10 +31,12 @@ __copyright__ = '(C) 2022 by DevActif'
 __revision__ = '$Format:%H$'
 
 from qgis.core import QgsProcessingProvider
+from .crs_from_wor_algorithm import CrsFromWorAlgorithm
+from .layers_loader_algorithm import LayersLoaderAlgorithm
 from .open_wor_algorithm import OpenWorAlgorithm
 
 
-class OpenWorProvider(QgsProcessingProvider):
+class DevActifProvider(QgsProcessingProvider):
 
     def __init__(self):
         """
@@ -54,6 +56,8 @@ class OpenWorProvider(QgsProcessingProvider):
         Loads all algorithms belonging to this provider.
         """
         self.addAlgorithm(OpenWorAlgorithm())
+        self.addAlgorithm(LayersLoaderAlgorithm())
+        self.addAlgorithm(CrsFromWorAlgorithm())
         # add additional algorithms here
         # self.addAlgorithm(MyOtherAlgorithm())
 

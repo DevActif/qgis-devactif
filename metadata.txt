@@ -4,14 +4,14 @@
 # Mandatory items:
 
 [general]
-name=Open Wor
+name=DevActif processing provider
 qgisMinimumVersion=3.8
-description=Read a .wor file to set coordinate system and load all layer in folder
-version=0.1
+description=Provides processing toolbox algotithms
+version=1.0
 author=DevActif
 email=info@devactif.ca
 
-about=Read a .wor file to set coordinate system and load all layer in folder
+about=DevActif is a software company
 
 tracker=http://bugs
 repository=http://repo

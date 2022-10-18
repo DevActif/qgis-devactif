@@ -1,2 +1,0 @@
-RASTER = "raster"
-VECTOR = "vector"
