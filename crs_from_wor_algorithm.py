@@ -37,7 +37,6 @@ from qgis.core import (
     QgsProcessingAlgorithm,
     QgsProcessingParameterFile,
     QgsCoordinateReferenceSystem,
-    QgsProject,
     QgsProcessingException,
     QgsProcessingOutputString,
 )
@@ -88,9 +87,9 @@ class CrsFromWorAlgorithm(QgsProcessingAlgorithm):
         )
 
     def prepareAlgorithm(self, parameters, context, feedback):
-        worFile = self.parameterAsFile(parameters, self.INPUT, context)
+        self.worFile = self.parameterAsFile(parameters, self.INPUT, context)
 
-        coordsysList = readCrsFromWor(worFile, feedback)
+        coordsysList = readCrsFromWor(self.worFile, feedback)
         epsgId = extractEpsgId(coordsysList)
 
         if(not epsgId):
@@ -107,6 +106,7 @@ class CrsFromWorAlgorithm(QgsProcessingAlgorithm):
         """
         Here is where the processing itself takes place.
         """
+        context.project().setFileName(os.path.basename(self.worFile))
         feedback.setProgressText("Changing CRS and ellipsoid")
 
         self.originalCRS = context.project().crs()
@@ -115,17 +115,14 @@ class CrsFromWorAlgorithm(QgsProcessingAlgorithm):
         context.project().setCrs(self.crs, True)
 
         feedback.pushInfo("original CRS is {}".format(self.originalCRS))
-        feedback.pushInfo("CRS is now {}".format(QgsProject.instance().crs()))
+        feedback.pushInfo("CRS is now {}".format(context.project().crs()))
         feedback.pushInfo(
             "original ellipsoid is {}".format(self.originalEllipsoid))
         feedback.pushInfo("Ellipsoid is now {}".format(
-            QgsProject.instance().ellipsoid()))
+            context.project().ellipsoid()))
 
-        worFile = self.parameterAsFile(parameters, self.INPUT, context)
-        folder = os.path.dirname(worFile)
+        folder = os.path.dirname(self.worFile)
 
-        # processing.run("DevActif:Layers Loader", {
-        # 'INPUT': folder, 'CRS': self.crs})
 
         if feedback.isCanceled():
             self.resetCrs()

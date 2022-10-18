@@ -31,6 +31,8 @@ __copyright__ = '(C) 2022 by DevActif'
 __revision__ = '$Format:%H$'
 
 from qgis.core import QgsProcessingProvider
+from qgis.PyQt.QtGui import QIcon
+from .correct_elevation import CorrectElevationFromGrade
 from .crs_from_wor_algorithm import CrsFromWorAlgorithm
 from .layers_loader_algorithm import LayersLoaderAlgorithm
 from .open_wor_algorithm import OpenWorAlgorithm
@@ -58,6 +60,7 @@ class DevActifProvider(QgsProcessingProvider):
         self.addAlgorithm(OpenWorAlgorithm())
         self.addAlgorithm(LayersLoaderAlgorithm())
         self.addAlgorithm(CrsFromWorAlgorithm())
+        self.addAlgorithm(CorrectElevationFromGrade())
         # add additional algorithms here
         # self.addAlgorithm(MyOtherAlgorithm())
 
@@ -83,7 +86,7 @@ class DevActifProvider(QgsProcessingProvider):
         Should return a QIcon which is used for your provider inside
         the Processing toolbox.
         """
-        return QgsProcessingProvider.icon(self)
+        return QIcon(':/plugins/devactif/logo.png')
 
     def longName(self):
         """

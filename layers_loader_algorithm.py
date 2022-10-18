@@ -72,8 +72,6 @@ class LayersLoaderAlgorithm(QgsProcessingAlgorithm):
         with some other properties.
         """
 
-        # We add the input vector features source. It can have any kind of
-        # geometry.
         self.addParameter(
             QgsProcessingParameterFile(
                 self.INPUT,
@@ -107,6 +105,7 @@ class LayersLoaderAlgorithm(QgsProcessingAlgorithm):
         totalFileCount = countFiles(folder)
         feedback.pushInfo(
             "there is {} files in the folder {}".format(totalFileCount, folder))
+        feedback.setProgressText("Trying to load each layers...")
 
         outputLayers = {}
         fileCount = 0
@@ -129,7 +128,8 @@ class LayersLoaderAlgorithm(QgsProcessingAlgorithm):
                     layer.setCrs(crs)
                     outputLayers[layerName] = layer
 
-        feedback.setProgressText("Creating layers")
+        feedback.pushInfo(
+            "there is {} valid layers".format(len(outputLayers)))
 
         for name, layer in outputLayers.items():
             context.temporaryLayerStore().addMapLayer(layer)
