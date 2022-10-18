@@ -1,7 +1,7 @@
 #/***************************************************************************
-# OpenWor
+# Devactif processing provider
 #
-# Read a .wor file to set coordinate system and load all layer in folder
+# Devactif processing provider for opening wor files and correcting grade
 #							 -------------------
 #		begin				: 2022-10-05
 #		git sha				: $Format:%H$

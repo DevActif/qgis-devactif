@@ -6,15 +6,15 @@
 [general]
 name=DevActif processing provider
 qgisMinimumVersion=3.8
-description=Provides processing toolbox algotithms
+description=Provides DevActif processing algotithms. Open wor, correct elevation
 version=1.0
 author=DevActif
 email=info@devactif.ca
 
-about=DevActif is a software company
+about=Software experts at your service
 
-tracker=http://bugs
-repository=http://repo
+tracker=https://github.com/DevActif/qgis-devactif/issues
+repository=https://github.com/DevActif/qgis-devactif
 # End of mandatory metadata
 
 # Recommended items:
@@ -24,11 +24,11 @@ hasProcessingProvider=yes
 # changelog=
 
 # Tags are comma separated with spaces allowed
-tags=wor, Workspace, Mapinfo, CoordSys
+tags=wor, Workspace, Mapinfo, CoordSys, processing
 
-# homepage=http://homepage
+homepage=https://devactif.ca/
 # category=Analysis
-# icon=icon.png
+icon=logo.png
 # experimental flag
 experimental=False
 
