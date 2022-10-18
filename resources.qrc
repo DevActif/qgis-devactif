@@ -1,5 +1,0 @@
-<RCC>
-    <qresource prefix="/plugins/devactif" >
-        <file>logo.png</file>
-    </qresource>
-</RCC>

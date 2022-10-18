@@ -30,6 +30,7 @@ __copyright__ = '(C) 2022 by DevActif'
 
 __revision__ = '$Format:%H$'
 
+import os
 from qgis.PyQt.QtCore import QCoreApplication
 from qgis.core import (
     QgsProcessingMultiStepFeedback,
@@ -60,8 +61,8 @@ class OpenWorAlgorithm(QgsProcessingAlgorithm):
         results = {}
         outputs = {}
 
-        # Open Wor
         worFile = self.parameterAsFile(parameters, self.INPUT, context)
+        context.project().setFileName(os.path.basename(worFile))
 
         outputs['crsfromwor'] = processing.run(
             'DevActif:crsfromwor', {'Input': worFile}, context=context, feedback=feedback, is_child_algorithm=True)

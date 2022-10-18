@@ -30,6 +30,7 @@ __copyright__ = '(C) 2022 by DevActif'
 
 __revision__ = '$Format:%H$'
 
+import os
 from qgis.core import QgsProcessingProvider
 from qgis.PyQt.QtGui import QIcon
 from .correct_elevation import CorrectElevationFromGrade
@@ -86,7 +87,10 @@ class DevActifProvider(QgsProcessingProvider):
         Should return a QIcon which is used for your provider inside
         the Processing toolbox.
         """
-        return QIcon(':/plugins/devactif/logo.png')
+        plg_dir = os.path.dirname(__file__)
+        icon_path = os.path.join(plg_dir,  "logo.png")
+
+        return QIcon(icon_path)
 
     def longName(self):
         """

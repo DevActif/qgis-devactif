@@ -106,7 +106,6 @@ class CrsFromWorAlgorithm(QgsProcessingAlgorithm):
         """
         Here is where the processing itself takes place.
         """
-        context.project().setFileName(os.path.basename(self.worFile))
         feedback.setProgressText("Changing CRS and ellipsoid")
 
         self.originalCRS = context.project().crs()
