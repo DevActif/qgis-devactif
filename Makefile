@@ -40,11 +40,11 @@ SOURCES = \
 	__init__.py \
 	open_wor.py 
 
-PLUGINNAME = open_wor
+PLUGINNAME = devactif
 
 PY_FILES = \
 	__init__.py \
-	open_wor.py 
+	devactif.py 
 
 UI_FILES = 
 
