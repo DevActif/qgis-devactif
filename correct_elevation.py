@@ -20,9 +20,18 @@ from qgis.core import (QgsProcessing,
                        QgsProcessingParameterFeatureSink,
                        QgsProcessingParameterNumber,
                        QgsGeometry,
-                       QgsFeature
+                       QgsFeature,
+                       QgsMultiLineString
                        )
 from qgis import processing
+
+
+class ProcessingParameters:
+    def __init__(self, grade: float, origin_x: float, origin_y: float):
+        self.grade = grade
+        self.origin_x = origin_x
+        self.origin_y = origin_y
+        self.maxDistance = 0
 
 
 class CorrectElevationFromGrade(QgsProcessingAlgorithm):
@@ -98,7 +107,7 @@ class CorrectElevationFromGrade(QgsProcessingAlgorithm):
             QgsProcessingParameterFeatureSource(
                 self.INPUT,
                 self.tr('Input layer'),
-                [QgsProcessing.TypeVectorPolygon]
+                [QgsProcessing.TypeVectorAnyGeometry]
             )
         )
 
@@ -178,6 +187,7 @@ class CorrectElevationFromGrade(QgsProcessingAlgorithm):
             self.ORIGIN_Y,
             context
         )
+        processingParameters = ProcessingParameters(grade, origin_x, origin_y)
 
         # Send some information to the user
         feedback.pushInfo('CRS is {}'.format(source.sourceCrs().authid()))
@@ -190,7 +200,6 @@ class CorrectElevationFromGrade(QgsProcessingAlgorithm):
             'number of features: {}'.format(source.featureCount()))
         total = 100.0 / source.featureCount() if source.featureCount() else 0
         features = source.getFeatures()
-        maxDistance = 0
 
         for current, feature in enumerate(features):
             # Stop the algorithm if cancel button has been clicked
@@ -198,20 +207,9 @@ class CorrectElevationFromGrade(QgsProcessingAlgorithm):
                 break
 
             geometry = feature.geometry()
-            multiPolygonZ = geometry.get()
 
-            for indexPolygon in range(multiPolygonZ.childCount()):
-                polygon = multiPolygonZ.childGeometry(indexPolygon)
-                for indexLine in range(polygon.childCount()):
-                    line = polygon.childGeometry(indexLine)
-
-                    for indexPoint in range(line.childCount()):
-                        point = line.pointN(indexPoint)
-                        distance = point.distance(origin_x, origin_y)
-                        maxDistance = max(distance, maxDistance)
-                        # feedback.pushInfo('distance: ' + str(distance))
-                        newZ = point.z() + distance * grade/100.0
-                        line.setZAt(indexPoint, round(newZ, 3))
+            self.geometryIterator(
+                geometry.get(), processingParameters, 1, feedback)
 
             newFeature = QgsFeature()
             newFeature.setAttributes(feature.attributes())
@@ -222,7 +220,8 @@ class CorrectElevationFromGrade(QgsProcessingAlgorithm):
             # Update the progress bar
             feedback.setProgress(int(current * total))
 
-        feedback.pushInfo('max distance: {}'.format(maxDistance))
+        feedback.pushInfo('max distance: {}'.format(
+            processingParameters.maxDistance))
 
         # Return the results of the algorithm. In this case our only result is
         # the feature sink which contains the processed features, but some
@@ -231,3 +230,26 @@ class CorrectElevationFromGrade(QgsProcessingAlgorithm):
         # dictionary, with keys matching the feature corresponding parameter
         # or output names.
         return {self.OUTPUT: dest_id}
+
+    def adjustPoint(self, geo: QgsMultiLineString, parameters: ProcessingParameters, feedback):
+        for indexPoint in range(geo.childCount()):
+            point = geo.pointN(indexPoint)
+            distance = point.distance(parameters.origin_x, parameters.origin_y)
+            parameters.maxDistance = max(distance, parameters.maxDistance)
+            newZ = point.z() + distance * parameters.grade/100.0
+
+            # feedback.pushInfo('distance: ' + str(distance))
+            # feedback.pushInfo('initial z: ' + str(point.z()))
+            # feedback.pushInfo('modified z: ' + str(newZ))
+            geo.setZAt(indexPoint, round(newZ, 3))
+
+    def geometryIterator(self, geo: QgsGeometry, parameters: ProcessingParameters, iterationDepth: int, feedback) -> bool:
+        if(iterationDepth > 5):
+            return
+        for indexChild in range(geo.childCount()):
+            childGeo = geo.childGeometry(indexChild)
+            if(childGeo.geometryType() == "LineString"):
+                self.adjustPoint(childGeo, parameters, feedback)
+            else:
+                self.geometryIterator(
+                    childGeo, parameters, iterationDepth+1, feedback)
