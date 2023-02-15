@@ -26,14 +26,6 @@ from qgis.core import (QgsProcessing,
 from qgis import processing
 
 
-class ProcessingParameters:
-    def __init__(self, grade: float, origin_x: float, origin_y: float):
-        self.grade = grade
-        self.origin_x = origin_x
-        self.origin_y = origin_y
-        self.maxDistance = 0
-
-
 class CorrectElevationFromGrade(QgsProcessingAlgorithm):
     """
     This is an example algorithm that takes a vector layer and
@@ -170,24 +162,24 @@ class CorrectElevationFromGrade(QgsProcessingAlgorithm):
             source.sourceCrs()
         )
 
-        grade = self.parameterAsDouble(
+        self.grade = self.parameterAsDouble(
             parameters,
             self.GRADE,
             context
         )
 
-        origin_x = self.parameterAsDouble(
+        self.origin_x = self.parameterAsDouble(
             parameters,
             self.ORIGIN_X,
             context
         )
 
-        origin_y = self.parameterAsDouble(
+        self.origin_y = self.parameterAsDouble(
             parameters,
             self.ORIGIN_Y,
             context
         )
-        processingParameters = ProcessingParameters(grade, origin_x, origin_y)
+        self.maxDistance = 0
 
         # Send some information to the user
         feedback.pushInfo('CRS is {}'.format(source.sourceCrs().authid()))
@@ -208,8 +200,7 @@ class CorrectElevationFromGrade(QgsProcessingAlgorithm):
 
             geometry = feature.geometry()
 
-            self.geometryIterator(
-                geometry.get(), processingParameters, 1, feedback)
+            self.geometryIterator(geometry.get(), 1, feedback)
 
             newFeature = QgsFeature()
             newFeature.setAttributes(feature.attributes())
@@ -221,7 +212,7 @@ class CorrectElevationFromGrade(QgsProcessingAlgorithm):
             feedback.setProgress(int(current * total))
 
         feedback.pushInfo('max distance: {}'.format(
-            processingParameters.maxDistance))
+            self.maxDistance))
 
         # Return the results of the algorithm. In this case our only result is
         # the feature sink which contains the processed features, but some
@@ -231,25 +222,25 @@ class CorrectElevationFromGrade(QgsProcessingAlgorithm):
         # or output names.
         return {self.OUTPUT: dest_id}
 
-    def adjustPoint(self, geo: QgsMultiLineString, parameters: ProcessingParameters, feedback):
+    def adjustPoint(self, geo: QgsMultiLineString, feedback):
         for indexPoint in range(geo.childCount()):
             point = geo.pointN(indexPoint)
-            distance = point.distance(parameters.origin_x, parameters.origin_y)
-            parameters.maxDistance = max(distance, parameters.maxDistance)
-            newZ = point.z() + distance * parameters.grade/100.0
+            distance = point.distance(self.origin_x, self.origin_y)
+            self.maxDistance = max(distance, self.maxDistance)
+            newZ = point.z() + distance * self.grade/100.0
 
             # feedback.pushInfo('distance: ' + str(distance))
             # feedback.pushInfo('initial z: ' + str(point.z()))
             # feedback.pushInfo('modified z: ' + str(newZ))
             geo.setZAt(indexPoint, round(newZ, 3))
 
-    def geometryIterator(self, geo: QgsGeometry, parameters: ProcessingParameters, iterationDepth: int, feedback) -> bool:
+    def geometryIterator(self, geo: QgsGeometry, iterationDepth: int, feedback) -> bool:
         if(iterationDepth > 5):
             return
         for indexChild in range(geo.childCount()):
             childGeo = geo.childGeometry(indexChild)
             if(childGeo.geometryType() == "LineString"):
-                self.adjustPoint(childGeo, parameters, feedback)
+                self.adjustPoint(childGeo,  feedback)
             else:
                 self.geometryIterator(
-                    childGeo, parameters, iterationDepth+1, feedback)
+                    childGeo,  iterationDepth+1, feedback)
