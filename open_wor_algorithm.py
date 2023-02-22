@@ -35,6 +35,7 @@ from qgis.PyQt.QtCore import QCoreApplication
 from qgis.core import (
     QgsProcessingMultiStepFeedback,
     QgsProcessing,
+    QgsProcessingParameterCrs,
     QgsProcessingParameterFile,
     QgsProcessingAlgorithm)
 import processing
@@ -51,6 +52,13 @@ class OpenWorAlgorithm(QgsProcessingAlgorithm):
                 self.INPUT,
                 self.tr('MapInfo Workspace file'),
                 extension="wor"
+            )
+        )
+
+        self.addParameter(
+            QgsProcessingParameterCrs(
+                self.CRS,
+                self.tr('Coordinate Reference System')
             )
         )
 
