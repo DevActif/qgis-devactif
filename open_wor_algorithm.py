@@ -35,6 +35,7 @@ from qgis.PyQt.QtCore import QCoreApplication
 from qgis.core import (
     QgsProcessingMultiStepFeedback,
     QgsProcessing,
+    QgsProcessingParameterCrs,
     QgsProcessingParameterFile,
     QgsProcessingAlgorithm)
 import processing
@@ -43,6 +44,7 @@ import processing
 class OpenWorAlgorithm(QgsProcessingAlgorithm):
 
     INPUT = 'Input'
+    CRS = 'CRS'
 
     def initAlgorithm(self, config=None):
 
@@ -54,6 +56,13 @@ class OpenWorAlgorithm(QgsProcessingAlgorithm):
             )
         )
 
+        self.addParameter(
+            QgsProcessingParameterCrs(
+                self.CRS,
+                self.tr('Coordinate Reference System')
+            )
+        )
+
     def processAlgorithm(self, parameters, context, model_feedback):
         # Use a multi-step feedback, so that individual child algorithm progress reports are adjusted for the
         # overall progress through the model
@@ -62,6 +71,8 @@ class OpenWorAlgorithm(QgsProcessingAlgorithm):
         outputs = {}
 
         worFile = self.parameterAsFile(parameters, self.INPUT, context)
+        crs = self.parameterAsCrs(parameters, self.CRS, context)
+        folder = os.path.dirname(worFile)
         context.project().setFileName(os.path.basename(worFile))
 
         outputs['crsfromwor'] = processing.run(
@@ -73,9 +84,10 @@ class OpenWorAlgorithm(QgsProcessingAlgorithm):
 
         # Layers Loader
         alg_params = {
-            'CRS': outputs['crsfromwor']['Crs'],
-            'INPUT': outputs['crsfromwor']['Folder']
+            'CRS': crs,
+            'INPUT': folder
         }
+
         outputs['LayersLoader'] = processing.run(
             'DevActif:Layers Loader', alg_params, context=context, feedback=feedback, is_child_algorithm=True)
         return results
