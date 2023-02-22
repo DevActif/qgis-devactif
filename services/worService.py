@@ -35,8 +35,9 @@ def readCrsFromWor(worFile: str, feedback: QgsProcessingFeedback) -> list[str]:
             if line.startswith(CRSPREFIX):
                 crsString = line.removeprefix(CRSPREFIX).strip()
             if line.startswith(OPENTABLE):
-                tableString = line.removeprefix(OPENTABLE).strip()
+                tableString += line.removeprefix(OPENTABLE).strip() + "\n"
             line = f.readline()
     feedback.pushInfo("found coordSys: {}".format(crsString))
     coordsysList = crsString.split(", ")
+    feedback.pushInfo("found Open Table: {}".format(tableString))
     return coordsysList
