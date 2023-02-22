@@ -44,6 +44,7 @@ import processing
 class OpenWorAlgorithm(QgsProcessingAlgorithm):
 
     INPUT = 'Input'
+    CRS = 'CRS'
 
     def initAlgorithm(self, config=None):
 
@@ -70,6 +71,8 @@ class OpenWorAlgorithm(QgsProcessingAlgorithm):
         outputs = {}
 
         worFile = self.parameterAsFile(parameters, self.INPUT, context)
+        crs = self.parameterAsCrs(parameters, self.CRS, context)
+        folder = os.path.dirname(worFile)
         context.project().setFileName(os.path.basename(worFile))
 
         outputs['crsfromwor'] = processing.run(
@@ -81,9 +84,10 @@ class OpenWorAlgorithm(QgsProcessingAlgorithm):
 
         # Layers Loader
         alg_params = {
-            'CRS': outputs['crsfromwor']['Crs'],
-            'INPUT': outputs['crsfromwor']['Folder']
+            'CRS': crs,
+            'INPUT': folder
         }
+
         outputs['LayersLoader'] = processing.run(
             'DevActif:Layers Loader', alg_params, context=context, feedback=feedback, is_child_algorithm=True)
         return results
