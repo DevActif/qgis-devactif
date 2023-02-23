@@ -11,6 +11,10 @@ def extractLayerName(layer_path: str) -> str:
         layerName = "".join([layerName, " ", subLayerName])
     return layerName
 
+def chooseFileFromLayerName(layerPathNameWor: str) -> str:
+    path = ""
+    return path
+
 def countFiles(folder:str)->int:
     totalFileCount = 0
     for root, dirs, files in os.walk(folder):

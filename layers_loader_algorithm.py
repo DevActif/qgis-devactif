@@ -41,7 +41,7 @@ from qgis.core import (
     QgsRasterLayer,
     QgsVectorLayer
 )
-from .services.layerService import extractLayerName, countFiles
+from .services.layerService import extractLayerName, countFiles, chooseFileFromLayerName
 
 
 class LayersLoaderAlgorithm(QgsProcessingAlgorithm):
@@ -73,11 +73,14 @@ class LayersLoaderAlgorithm(QgsProcessingAlgorithm):
         """
 
         self.addParameter(
-            QgsProcessingParameterFile(
-                self.INPUT,
-                self.tr('Input folder'),
-                behavior=1
-            )
+            # QgsProcessingParameterFile(
+            #     self.INPUT,
+            #     self.tr('Input folder'),
+            #     behavior=1
+            # )
+            self.INPUT,
+                self.tr('MapInfo Workspace file'),
+                extension="wor"
         )
 
         self.addParameter(
@@ -105,7 +108,7 @@ class LayersLoaderAlgorithm(QgsProcessingAlgorithm):
         totalFileCount = countFiles(folder)
         feedback.pushInfo(
             "there is {} files in the folder {}".format(totalFileCount, folder))
-        feedback.setProgressText("Trying to load each layers...")
+        feedback.setProgressText("Trying to load each layer...")
 
         outputLayers = {}
         fileCount = 0
@@ -117,7 +120,9 @@ class LayersLoaderAlgorithm(QgsProcessingAlgorithm):
                 fileCount += 1
 
                 path = os.path.join(root, file_)
+
                 layerName = extractLayerName(path)
+                layerPath = chooseFileFromLayerName(layerName)
 
                 layer = QgsRasterLayer(path, layerName)
 
