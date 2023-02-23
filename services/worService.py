@@ -1,5 +1,5 @@
 from qgis.core import (QgsProcessingException, QgsProcessingFeedback)
-from ..config.projections import CRSPREFIX, COORDSYS_PARAMETERS_COUNT, DATUMS_PARAMETERS_COUNT, PROJECTIONSTRING, datums
+from ..config.projections import CRSPREFIX, OPENTABLE, COORDSYS_PARAMETERS_COUNT, DATUMS_PARAMETERS_COUNT, PROJECTIONSTRING, datums
 
 
 def extractEpsgId(coordsys: list) -> str:
@@ -25,6 +25,8 @@ def readCrsFromWor(worFile: str, feedback: QgsProcessingFeedback) -> list[str]:
     with open(worFile, "r") as f:
         line = f.readline()
         crsString = ""
+        arrayLayers = []
+        totalLayerCount = 0
         feedback.pushInfo(CRSPREFIX)
         while line and not crsString:
             if feedback.isCanceled():
@@ -33,7 +35,12 @@ def readCrsFromWor(worFile: str, feedback: QgsProcessingFeedback) -> list[str]:
             # feedback.pushInfo("read line: {}".format(line))
             if line.startswith(CRSPREFIX):
                 crsString = line.removeprefix(CRSPREFIX).strip()
+            if line.startswith(OPENTABLE):
+                arrayLayers.append(line.removeprefix(OPENTABLE).strip())
             line = f.readline()
     feedback.pushInfo("found coordSys: {}".format(crsString))
     coordsysList = crsString.split(", ")
+    for layer in arrayLayers:
+        totalLayerCount += 1
+    feedback.pushInfo("Numbers of layers found: {}".format(totalLayerCount))
     return coordsysList
