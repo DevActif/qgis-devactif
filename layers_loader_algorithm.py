@@ -73,14 +73,11 @@ class LayersLoaderAlgorithm(QgsProcessingAlgorithm):
         """
 
         self.addParameter(
-            # QgsProcessingParameterFile(
-            #     self.INPUT,
-            #     self.tr('Input folder'),
-            #     behavior=1
-            # )
-            self.INPUT,
-                self.tr('MapInfo Workspace file'),
-                extension="wor"
+            QgsProcessingParameterFile(
+                self.INPUT,
+                self.tr('Input folder'),
+                behavior=1
+            )
         )
 
         self.addParameter(
@@ -120,16 +117,17 @@ class LayersLoaderAlgorithm(QgsProcessingAlgorithm):
                 fileCount += 1
 
                 path = os.path.join(root, file_)
-
+                feedback.pushInfo(path)
                 layerName = extractLayerName(path)
-                layerPath = chooseFileFromLayerName(layerName)
+                pathFile = chooseFileFromLayerName(layerName)
 
-                layer = QgsRasterLayer(path, layerName)
+                # if layer jpg or any raster extension 
 
                 if not layer.isValid():
                     layer = QgsVectorLayer(path, layerName, 'ogr')
 
-                if layer.isValid():
+                else:
+                    layer = QgsRasterLayer(path, layerName)
                     layer.setCrs(crs)
                     outputLayers[layerName] = layer
 
