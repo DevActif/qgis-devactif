@@ -117,17 +117,19 @@ class LayersLoaderAlgorithm(QgsProcessingAlgorithm):
                 fileCount += 1
 
                 path = os.path.join(root, file_)
-                feedback.pushInfo(path)
                 layerName = extractLayerName(path)
-                pathFile = chooseFileFromLayerName(layerName)
+                # pathFile = chooseFileFromLayerName(layerName)
 
-                # if layer jpg or any raster extension 
+                layer = QgsRasterLayer(path, layerName)
+                # if layer jpg or any raster extension:
+                #    layer = QgsRasterLayer(path, layerName)
+                # else if layer has vector extension
+                #    layer = QgsVectorLayer(path, layerName, 'ogr') 
 
                 if not layer.isValid():
                     layer = QgsVectorLayer(path, layerName, 'ogr')
 
                 else:
-                    layer = QgsRasterLayer(path, layerName)
                     layer.setCrs(crs)
                     outputLayers[layerName] = layer
 
