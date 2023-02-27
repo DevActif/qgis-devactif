@@ -40,7 +40,5 @@ def readCrsFromWor(worFile: str, feedback: QgsProcessingFeedback) -> list[str]:
             line = f.readline()
     feedback.pushInfo("found coordSys: {}".format(crsString))
     coordsysList = crsString.split(", ")
-    for layer in arrayLayers:
-        totalLayerCount += 1
-    feedback.pushInfo("Numbers of layers found: {}".format(totalLayerCount))
+    feedback.pushInfo("Numbers of layers found: {}".format(len(arrayLayers)))
     return coordsysList
