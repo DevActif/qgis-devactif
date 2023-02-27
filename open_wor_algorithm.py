@@ -34,7 +34,6 @@ import os
 from qgis.PyQt.QtCore import QCoreApplication
 from qgis.core import (
     QgsProcessingMultiStepFeedback,
-    QgsProcessing,
     QgsProcessingParameterCrs,
     QgsProcessingParameterFile,
     QgsProcessingAlgorithm)
