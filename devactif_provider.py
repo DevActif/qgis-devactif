@@ -35,7 +35,6 @@ from qgis.core import QgsProcessingProvider
 from qgis.PyQt.QtGui import QIcon
 from .correct_elevation import CorrectElevationFromGrade
 from .crs_from_wor_algorithm import CrsFromWorAlgorithm
-from .layers_loader_algorithm import LayersLoaderAlgorithm
 from .open_wor_algorithm import OpenWorAlgorithm
 
 
@@ -59,8 +58,7 @@ class DevActifProvider(QgsProcessingProvider):
         Loads all algorithms belonging to this provider.
         """
         self.addAlgorithm(OpenWorAlgorithm())
-        self.addAlgorithm(LayersLoaderAlgorithm())
-        self.addAlgorithm(CrsFromWorAlgorithm())
+        # self.addAlgorithm(CrsFromWorAlgorithm())
         self.addAlgorithm(CorrectElevationFromGrade())
         # add additional algorithms here
         # self.addAlgorithm(MyOtherAlgorithm())

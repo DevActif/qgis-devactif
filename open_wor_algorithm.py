@@ -34,12 +34,15 @@ import os
 from qgis.PyQt.QtCore import QCoreApplication
 from qgis.core import (
     QgsProcessingMultiStepFeedback,
-    QgsProcessing,
     QgsProcessingParameterCrs,
     QgsProcessingParameterFile,
-    QgsProcessingAlgorithm)
-import processing
-
+    QgsProcessingContext,
+    QgsProcessingAlgorithm,
+    QgsRasterLayer,
+    QgsVectorLayer)
+from .services.worService import readLayersFromWor
+from .services.layerService import getFilesList, chooseFileFromLayerPath
+from .config.extensions import RASTER, VECTOR
 
 class OpenWorAlgorithm(QgsProcessingAlgorithm):
 
@@ -67,30 +70,73 @@ class OpenWorAlgorithm(QgsProcessingAlgorithm):
         # Use a multi-step feedback, so that individual child algorithm progress reports are adjusted for the
         # overall progress through the model
         feedback = QgsProcessingMultiStepFeedback(2, model_feedback)
-        results = {}
-        outputs = {}
 
         worFile = self.parameterAsFile(parameters, self.INPUT, context)
         crs = self.parameterAsCrs(parameters, self.CRS, context)
         folder = os.path.dirname(worFile)
+
+        feedback.setProgressText("Searching layers")
+        layers = readLayersFromWor(worFile)
         context.project().setFileName(os.path.basename(worFile))
 
-        outputs['crsfromwor'] = processing.run(
-            'DevActif:crsfromwor', {'Input': worFile}, context=context, feedback=feedback, is_child_algorithm=True)
+        feedback.setProgressText("Changing CRS and ellipsoid")
+
+        self.originalCRS = context.project().crs()
+        self.originalEllipsoid = context.project().ellipsoid()
+
+        context.project().setCrs(crs, True)
+
+        feedback.pushInfo("original CRS is {}".format(self.originalCRS))
+        feedback.pushInfo("CRS is now {}".format(context.project().crs()))
+        feedback.pushInfo(
+            "original ellipsoid is {}".format(self.originalEllipsoid))
+        feedback.pushInfo("Ellipsoid is now {}".format(
+            context.project().ellipsoid()))
 
         feedback.setCurrentStep(1)
         if feedback.isCanceled():
-            return {}
+            self.resetCrs()
+            return
+        
+        listFiles = getFilesList(folder)
+        layersCount = len(layers)
+        feedback.pushInfo(
+            "there is {} files in the folder {}".format(len(listFiles), folder))
+        
+        outputLayers = {}
+        currentLayer = 0
+        
+        for layer in layers:
+            if feedback.isCanceled():
+                return False
+            feedback.setProgress(currentLayer/layersCount * 100)
+            currentLayer += 1
 
-        # Layers Loader
-        alg_params = {
-            'CRS': crs,
-            'INPUT': folder
-        }
+            suitor = chooseFileFromLayerPath(layer['path'], listFiles)
 
-        outputs['LayersLoader'] = processing.run(
-            'DevActif:Layers Loader', alg_params, context=context, feedback=feedback, is_child_algorithm=True)
-        return results
+            path = os.path.join(folder, suitor['file'])
+
+            if suitor['type'] == RASTER:
+                qgsLayer = QgsRasterLayer(path, layer['layerName'])
+            elif suitor['type'] == VECTOR:
+                qgsLayer = QgsVectorLayer(path, layer['layerName'], 'ogr')
+            else:
+                continue
+            
+            qgsLayer.setCrs(crs)
+            outputLayers[layer['layerName']] = qgsLayer
+
+        feedback.pushInfo("there is {} valid layers".format(len(outputLayers)))
+        for name, qgsLayer in outputLayers.items():
+            context.temporaryLayerStore().addMapLayer(qgsLayer)
+            context.addLayerToLoadOnCompletion(
+                qgsLayer.id(), QgsProcessingContext.LayerDetails(name=name, project=context.project()))
+            
+        return outputLayers
+    
+    def resetCrs(self, context):
+        context.project().setCrs(self.originalCRS)
+        context.project().setEllipsoid(self.originalEllipsoid)
 
     def name(self):
         return 'openwor'
