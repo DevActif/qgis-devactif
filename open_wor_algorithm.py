@@ -115,18 +115,19 @@ class OpenWorAlgorithm(QgsProcessingAlgorithm):
 
             suitor = chooseFileFromLayerPath(layer['path'], listFiles)
 
-            path = os.path.join(folder, suitor['file'])
+            if suitor:
+                path = os.path.join(folder, suitor['file'])
 
-            if suitor['type'] == RASTER:
-                qgsLayer = QgsRasterLayer(path, layer['layerName'])
-            elif suitor['type'] == VECTOR:
-                qgsLayer = QgsVectorLayer(path, layer['layerName'], 'ogr')
-            else:
-                continue
+                if suitor['type'] == RASTER:
+                    qgsLayer = QgsRasterLayer(path, layer['layerName'])
+                elif suitor['type'] == VECTOR:
+                    qgsLayer = QgsVectorLayer(path, layer['layerName'], 'ogr')
+                else:
+                    continue
 
-            if qgsLayer.isValid():
-                qgsLayer.setCrs(crs)
-                outputLayers[layer['layerName']] = qgsLayer
+                if qgsLayer.isValid():
+                    qgsLayer.setCrs(crs)
+                    outputLayers[layer['layerName']] = qgsLayer
 
         feedback.pushInfo("there is {} valid layers".format(len(outputLayers)))
         for name, qgsLayer in outputLayers.items():
