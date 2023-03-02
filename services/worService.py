@@ -1,4 +1,4 @@
-from qgis.core import (QgsProcessingException, QgsProcessingFeedback)
+from qgis.core import (QgsProcessingException)
 from ..config.projections import CRSPREFIX, OPENTABLE, COORDSYS_PARAMETERS_COUNT, DATUMS_PARAMETERS_COUNT, PROJECTIONSTRING, datums
 import re
 import os
@@ -21,14 +21,12 @@ def extractEpsgId(coordsys: list) -> str:
 
     return epsgId
 
-def readLayersFromWor(worFile: str, feedback: QgsProcessingFeedback) -> list[str]:
+def readLayersFromWor(worFile: str) -> list[str]:
     with open(worFile, "r") as f:
         foundOpenTable = False
         line = f.readline()
         arrayLayers = []
         while line:
-            if feedback.isCanceled():
-                break
             line = line.strip(" \n")
             if line.startswith(OPENTABLE):
                 path = re.findall('"([^"]*)"', line)[0]
@@ -42,21 +40,16 @@ def readLayersFromWor(worFile: str, feedback: QgsProcessingFeedback) -> list[str
             elif foundOpenTable:
                 break
             line = f.readline()
-    feedback.pushInfo("Numbers of layers found: {}".format(len(arrayLayers)))
     return arrayLayers
 
-def readCrsFromWor(worFile: str, feedback: QgsProcessingFeedback) -> list[str]:
+def readCrsFromWor(worFile: str) -> list[str]:
     with open(worFile, "r") as f:
         line = f.readline()
         crsString = ""
-        feedback.pushInfo(CRSPREFIX)
         while line and not crsString:
-            if feedback.isCanceled():
-                break
             line = line.strip(" \n")
             if line.startswith(CRSPREFIX):
                 crsString = line.removeprefix(CRSPREFIX).strip()
             line = f.readline()
-    feedback.pushInfo("found coordSys: {}".format(crsString))
     coordsysList = crsString.split(", ")
     return coordsysList

@@ -70,14 +70,13 @@ class OpenWorAlgorithm(QgsProcessingAlgorithm):
         # Use a multi-step feedback, so that individual child algorithm progress reports are adjusted for the
         # overall progress through the model
         feedback = QgsProcessingMultiStepFeedback(2, model_feedback)
-        results = {}
 
         worFile = self.parameterAsFile(parameters, self.INPUT, context)
         crs = self.parameterAsCrs(parameters, self.CRS, context)
         folder = os.path.dirname(worFile)
 
         feedback.setProgressText("Searching layers")
-        layers = readLayersFromWor(worFile, feedback)
+        layers = readLayersFromWor(worFile)
         context.project().setFileName(os.path.basename(worFile))
 
         feedback.setProgressText("Changing CRS and ellipsoid")
@@ -120,7 +119,7 @@ class OpenWorAlgorithm(QgsProcessingAlgorithm):
             if suitor['type'] == RASTER:
                 qgsLayer = QgsRasterLayer(path, layer['layerName'])
             elif suitor['type'] == VECTOR:
-                qgsLayer = QgsVectorLayer(path, layer['layerName'])
+                qgsLayer = QgsVectorLayer(path, layer['layerName'], 'ogr')
             else:
                 continue
             

@@ -86,10 +86,10 @@ class CrsFromWorAlgorithm(QgsProcessingAlgorithm):
             )
         )
 
-    def prepareAlgorithm(self, parameters, context, feedback):
+    def prepareAlgorithm(self, parameters, context):
         self.worFile = self.parameterAsFile(parameters, self.INPUT, context)
 
-        coordsysList = readCrsFromWor(self.worFile, feedback)
+        coordsysList = readCrsFromWor(self.worFile)
         epsgId = extractEpsgId(coordsysList)
 
         if(not epsgId):
@@ -102,7 +102,7 @@ class CrsFromWorAlgorithm(QgsProcessingAlgorithm):
 
         return True
 
-    def processAlgorithm(self, parameters, context, feedback):
+    def processAlgorithm(self, context, feedback):
         """
         Here is where the processing itself takes place.
         """
