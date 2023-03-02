@@ -23,8 +23,12 @@ def chooseFileFromLayerPath(path: str, files: list[str]) -> object:
                 listSuitors.append({'file': file, 'extension': extension, 'priority': allExtensions.index(extension), 'type': layerType})
     
     listSuitors = sorted(listSuitors, key=getSuitorKeySort)
+
+    if len(listSuitors) > 0:
+        return listSuitors[0]
+    else:
+        return {}
     
-    return listSuitors[0]
 
 def getSuitorKeySort(suitor:object)->int:
     return suitor['priority']

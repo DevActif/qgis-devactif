@@ -31,6 +31,7 @@ __copyright__ = '(C) 2022 by DevActif'
 __revision__ = '$Format:%H$'
 
 import os
+import json
 from qgis.PyQt.QtCore import QCoreApplication
 from qgis.core import (
     QgsProcessingMultiStepFeedback,
@@ -113,18 +114,19 @@ class OpenWorAlgorithm(QgsProcessingAlgorithm):
             currentLayer += 1
 
             suitor = chooseFileFromLayerPath(layer['path'], listFiles)
-
-            path = os.path.join(folder, suitor['file'])
-
-            if suitor['type'] == RASTER:
-                qgsLayer = QgsRasterLayer(path, layer['layerName'])
-            elif suitor['type'] == VECTOR:
-                qgsLayer = QgsVectorLayer(path, layer['layerName'], 'ogr')
-            else:
-                continue
             
-            qgsLayer.setCrs(crs)
-            outputLayers[layer['layerName']] = qgsLayer
+            if suitor:
+                path = os.path.join(folder, suitor['file'])
+
+                if suitor['type'] == RASTER:
+                    qgsLayer = QgsRasterLayer(path, layer['layerName'])
+                elif suitor['type'] == VECTOR:
+                    qgsLayer = QgsVectorLayer(path, layer['layerName'], 'ogr')
+                else:
+                    continue
+            
+                qgsLayer.setCrs(crs)
+                outputLayers[layer['layerName']] = qgsLayer
 
         feedback.pushInfo("there is {} valid layers".format(len(outputLayers)))
         for name, qgsLayer in outputLayers.items():
