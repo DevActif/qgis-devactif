@@ -27,7 +27,7 @@ def chooseFileFromLayerPath(path: str, files: list[str]) -> object:
     if len(listSuitors) > 0:
         return listSuitors[0]
     else:
-        raise ValueError('Suitor not found.')
+        raise ValueError('Suitor not found.', path)
     
 
 def getSuitorKeySort(suitor:object)->int:
