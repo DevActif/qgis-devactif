@@ -108,6 +108,7 @@ class OpenWorAlgorithm(QgsProcessingAlgorithm):
         
         for layer in layers:
             if feedback.isCanceled():
+                self.resetCrs()
                 return False
             feedback.setProgress(currentLayer/layersCount * 100)
             currentLayer += 1
@@ -122,9 +123,10 @@ class OpenWorAlgorithm(QgsProcessingAlgorithm):
                 qgsLayer = QgsVectorLayer(path, layer['layerName'], 'ogr')
             else:
                 continue
-            
-            qgsLayer.setCrs(crs)
-            outputLayers[layer['layerName']] = qgsLayer
+
+            if qgsLayer.isValid():
+                qgsLayer.setCrs(crs)
+                outputLayers[layer['layerName']] = qgsLayer
 
         feedback.pushInfo("there is {} valid layers".format(len(outputLayers)))
         for name, qgsLayer in outputLayers.items():
