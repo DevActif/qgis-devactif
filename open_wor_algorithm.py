@@ -109,6 +109,7 @@ class OpenWorAlgorithm(QgsProcessingAlgorithm):
         
         for layer in layers:
             if feedback.isCanceled():
+                self.resetCrs()
                 return False
             feedback.setProgress(currentLayer/layersCount * 100)
             currentLayer += 1

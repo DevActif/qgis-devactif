@@ -1,4 +1,4 @@
-from qgis.core import (QgsProcessingException)
+from qgis.core import (QgsProcessingException, QgsProcessingFeedback)
 from ..config.projections import CRSPREFIX, OPENTABLE, COORDSYS_PARAMETERS_COUNT, DATUMS_PARAMETERS_COUNT, PROJECTIONSTRING, datums
 import re
 import os
@@ -42,14 +42,20 @@ def readLayersFromWor(worFile: str) -> list[str]:
             line = f.readline()
     return arrayLayers
 
-def readCrsFromWor(worFile: str) -> list[str]:
+def readCrsFromWor(worFile: str, feedback: QgsProcessingFeedback) -> list[str]:
     with open(worFile, "r") as f:
         line = f.readline()
         crsString = ""
+        feedback.pushInfo(CRSPREFIX)
         while line and not crsString:
+            if feedback.isCanceled():
+                break
             line = line.strip(" \n")
             if line.startswith(CRSPREFIX):
                 crsString = line.removeprefix(CRSPREFIX).strip()
             line = f.readline()
+    feedback.pushInfo("found coordSys: {}".format(crsString))
     coordsysList = crsString.split(", ")
     return coordsysList
+
+
