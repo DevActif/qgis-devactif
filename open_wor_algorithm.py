@@ -31,6 +31,7 @@ __copyright__ = '(C) 2022 by DevActif'
 __revision__ = '$Format:%H$'
 
 import os
+import json
 from qgis.PyQt.QtCore import QCoreApplication
 from qgis.core import (
     QgsProcessingMultiStepFeedback,
@@ -113,7 +114,11 @@ class OpenWorAlgorithm(QgsProcessingAlgorithm):
             feedback.setProgress(currentLayer/layersCount * 100)
             currentLayer += 1
 
-            suitor = chooseFileFromLayerPath(layer['path'], listFiles)
+            try:
+                suitor = chooseFileFromLayerPath(layer['path'], listFiles)
+            except ValueError as err:
+                feedback.reportError('Layer '+ err.args[1] + ' not found in the folder.')
+                continue
 
             path = os.path.join(folder, suitor['file'])
 
