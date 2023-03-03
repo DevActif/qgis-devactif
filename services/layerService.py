@@ -17,7 +17,7 @@ def chooseFileFromLayerPath(path: str, files: list[str]) -> object:
     allExtensions = rasters + vectors
     for file in files:
         if file.__contains__(path):
-            extension = re.findall('(\..*)$', file)[0]
+            extension = os.path.splitext(file)[1]
             if extension in allExtensions:
                 layerType = RASTER if extension in rasters else VECTOR
                 listSuitors.append({'file': file, 'extension': extension, 'priority': allExtensions.index(extension), 'type': layerType})
