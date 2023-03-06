@@ -1,6 +1,21 @@
+from qgis.core import (QgsProcessingContext, QgsRasterLayer, QgsVectorLayer)
 import os
-import re
 from ..config.extensions import rasters, vectors, RASTER, VECTOR
+from .projectService import projectService
+
+def createLayer(suitor, folder, layer, crs):
+    path = os.path.join(folder, suitor['file'])
+
+    if suitor['type'] == RASTER:
+        qgsLayer = QgsRasterLayer(path, layer['layerName'])
+    elif suitor['type'] == VECTOR:
+        qgsLayer = QgsVectorLayer(path, layer['layerName'], 'ogr')
+    else:
+        return
+
+    if qgsLayer.isValid():
+        qgsLayer.setCrs(crs)     
+        return qgsLayer
 
 def getFilesList(folder: str) -> list[str]:
     listFiles = []
@@ -29,6 +44,11 @@ def chooseFileFromLayerPath(path: str, files: list[str]) -> object:
     else:
         raise ValueError('Suitor not found.', path)
     
+def loadLayersOnCompletion(outputLayers: list[object], context: QgsProcessingContext):
+    for name, qgsLayer in outputLayers.items():
+        context.temporaryLayerStore().addMapLayer(qgsLayer)
+        context.addLayerToLoadOnCompletion(
+            qgsLayer.id(), QgsProcessingContext.LayerDetails(name=name, project=context.project()))
 
 def getSuitorKeySort(suitor:object)->int:
     return suitor['priority']
