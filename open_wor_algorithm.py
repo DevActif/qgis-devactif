@@ -31,7 +31,6 @@ __copyright__ = '(C) 2022 by DevActif'
 __revision__ = '$Format:%H$'
 
 import os
-import time
 from qgis.PyQt.QtCore import QCoreApplication
 from qgis.core import (
     QgsProcessingMultiStepFeedback,
@@ -82,13 +81,12 @@ class OpenWorAlgorithm(QgsProcessingAlgorithm):
             prjService.resetCrs(feedback)
             return
 
+        outputLayers = {}
+        currentLayer = 0
         feedback.setProgressText('Listing files in folder')
         listFiles = getFilesList(folder)
         layersCount = len(layers)
         feedback.pushInfo("there is {} files in the folder {}".format(len(listFiles), folder))
-
-        outputLayers = {}
-        currentLayer = 0
 
         feedback.setProgressText("Associating layers with files")
         feedback.setCurrentStep(1)
