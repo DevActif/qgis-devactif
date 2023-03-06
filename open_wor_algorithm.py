@@ -31,22 +31,18 @@ __copyright__ = '(C) 2022 by DevActif'
 __revision__ = '$Format:%H$'
 
 import os
-import json
+import time
 from qgis.PyQt.QtCore import QCoreApplication
 from qgis.core import (
     QgsProcessingMultiStepFeedback,
     QgsProcessingParameterCrs,
     QgsProcessingParameterFile,
-    QgsProcessingContext,
-    QgsProcessingAlgorithm,
-    QgsRasterLayer,
-    QgsVectorLayer)
+    QgsProcessingAlgorithm)
 from .services.worService import readLayersFromWor
-from .services.layerService import getFilesList, chooseFileFromLayerPath
-from .config.extensions import RASTER, VECTOR
+from .services.projectService import projectService
+from .services.layerService import loadLayersOnCompletion, getFilesList, chooseFileFromLayerPath, createLayer
 
 class OpenWorAlgorithm(QgsProcessingAlgorithm):
-
     INPUT = 'Input'
     CRS = 'CRS'
 
@@ -68,48 +64,37 @@ class OpenWorAlgorithm(QgsProcessingAlgorithm):
         )
 
     def processAlgorithm(self, parameters, context, model_feedback):
-        # Use a multi-step feedback, so that individual child algorithm progress reports are adjusted for the
-        # overall progress through the model
         feedback = QgsProcessingMultiStepFeedback(2, model_feedback)
+        prjService = projectService(context.project())
 
+        feedback.setCurrentStep(0)
         worFile = self.parameterAsFile(parameters, self.INPUT, context)
         crs = self.parameterAsCrs(parameters, self.CRS, context)
+
         folder = os.path.dirname(worFile)
-
-        feedback.setProgressText("Searching layers")
+        feedback.setProgressText("Reading layers from wor file")
         layers = readLayersFromWor(worFile)
-        context.project().setFileName(os.path.basename(worFile))
 
-        feedback.setProgressText("Changing CRS and ellipsoid")
-
-        self.originalCRS = context.project().crs()
-        self.originalEllipsoid = context.project().ellipsoid()
-
-        context.project().setCrs(crs, True)
-
-        feedback.pushInfo("original CRS is {}".format(self.originalCRS))
-        feedback.pushInfo("CRS is now {}".format(context.project().crs()))
-        feedback.pushInfo(
-            "original ellipsoid is {}".format(self.originalEllipsoid))
-        feedback.pushInfo("Ellipsoid is now {}".format(
-            context.project().ellipsoid()))
-
-        feedback.setCurrentStep(1)
-        if feedback.isCanceled():
-            self.resetCrs()
-            return
+        prjService.setFilename(worFile)
+        prjService.changeCRS(crs, feedback)
         
+        if feedback.isCanceled():
+            prjService.resetCrs(feedback)
+            return
+
+        feedback.setProgressText('Listing files in folder')
         listFiles = getFilesList(folder)
         layersCount = len(layers)
-        feedback.pushInfo(
-            "there is {} files in the folder {}".format(len(listFiles), folder))
-        
+        feedback.pushInfo("there is {} files in the folder {}".format(len(listFiles), folder))
+
         outputLayers = {}
         currentLayer = 0
-        
+
+        feedback.setProgressText("Associating layers with files")
+        feedback.setCurrentStep(1)
         for layer in layers:
             if feedback.isCanceled():
-                self.resetCrs()
+                prjService.resetCrs()
                 return False
             feedback.setProgress(currentLayer/layersCount * 100)
             currentLayer += 1
@@ -120,30 +105,15 @@ class OpenWorAlgorithm(QgsProcessingAlgorithm):
                 feedback.reportError('Layer '+ err.args[1] + ' not found in the folder.')
                 continue
 
-            path = os.path.join(folder, suitor['file'])
+            qgsLayer = createLayer(suitor, folder, layer, crs)
 
-            if suitor['type'] == RASTER:
-                qgsLayer = QgsRasterLayer(path, layer['layerName'])
-            elif suitor['type'] == VECTOR:
-                qgsLayer = QgsVectorLayer(path, layer['layerName'], 'ogr')
-            else:
-                continue
-
-            if qgsLayer.isValid():
-                qgsLayer.setCrs(crs)
+            if(qgsLayer):
                 outputLayers[layer['layerName']] = qgsLayer
 
         feedback.pushInfo("there is {} valid layers".format(len(outputLayers)))
-        for name, qgsLayer in outputLayers.items():
-            context.temporaryLayerStore().addMapLayer(qgsLayer)
-            context.addLayerToLoadOnCompletion(
-                qgsLayer.id(), QgsProcessingContext.LayerDetails(name=name, project=context.project()))
+        loadLayersOnCompletion(outputLayers, context)
             
         return outputLayers
-    
-    def resetCrs(self, context):
-        context.project().setCrs(self.originalCRS)
-        context.project().setEllipsoid(self.originalEllipsoid)
 
     def name(self):
         return 'openwor'
