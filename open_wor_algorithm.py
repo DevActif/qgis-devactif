@@ -69,7 +69,8 @@ class OpenWorAlgorithm(QgsProcessingAlgorithm):
         self.addParameter(
             QgsProcessingParameterString(
                 self.PRIORITY_RASTER,
-                self.tr('Raster extension priorities *Raster extensions always have priority and must be separated with a comma (Example: .jpg,.tif)'),
+                self.tr(
+                    'Raster extension priorities *Raster extensions always have priority and must be separated with a comma (Example: .jpg,.tif)'),
                 ",".join(rasters)
             )
         )
@@ -77,7 +78,8 @@ class OpenWorAlgorithm(QgsProcessingAlgorithm):
         self.addParameter(
             QgsProcessingParameterString(
                 self.PRIORITY_VECTOR,
-                self.tr('Vector extension priorities *Vector extensions must be separated with a comma (Example: .csv,.tab)'),
+                self.tr(
+                    'Vector extension priorities *Vector extensions must be separated with a comma (Example: .csv,.tab)'),
                 ",".join(vectors)
             )
         )
@@ -89,29 +91,38 @@ class OpenWorAlgorithm(QgsProcessingAlgorithm):
         feedback.setCurrentStep(0)
         worFile = self.parameterAsFile(parameters, self.INPUT, context)
         crs = self.parameterAsCrs(parameters, self.CRS, context)
-        raster_priorities = self.parameterAsString(parameters, self.PRIORITY_RASTER, context)
-        vector_priorities = self.parameterAsString(parameters, self.PRIORITY_VECTOR, context)
-
-        folder = os.path.dirname(worFile)
-        feedback.setProgressText("Reading layers from wor file")
-        layers = readLayersFromWor(worFile)
+        raster_priorities = self.parameterAsString(
+            parameters, self.PRIORITY_RASTER, context)
+        vector_priorities = self.parameterAsString(
+            parameters, self.PRIORITY_VECTOR, context)
 
         prjService.setFilename(worFile)
         prjService.changeCRS(crs, feedback)
-        
+
         if feedback.isCanceled():
             prjService.resetCrs(feedback)
             return
 
-        outputLayers = {}
-        currentLayer = 0
         feedback.setProgressText('Listing files in folder')
+        folder = os.path.dirname(worFile)
         listFiles = getFilesList(folder)
-        layersCount = len(layers)
-        feedback.pushInfo("there is {} files in the folder {}".format(len(listFiles), folder))
+        feedback.pushInfo(
+            "there is {} files in the folder {}".format(len(listFiles), folder))
+
+        if feedback.isCanceled():
+            prjService.resetCrs(feedback)
+            return
 
         feedback.setProgressText("Associating layers with files")
         feedback.setCurrentStep(1)
+
+        layers = readLayersFromWor(worFile)
+        layersCount = len(layers)
+        feedback.pushInfo(
+            "there is {} layers found in the wor file".format(layersCount))
+        outputLayers = {}
+        currentLayer = 0
+
         for layer in layers:
             if feedback.isCanceled():
                 prjService.resetCrs()
@@ -120,19 +131,21 @@ class OpenWorAlgorithm(QgsProcessingAlgorithm):
             currentLayer += 1
 
             try:
-                suitor = chooseFileFromLayerPath(layer['path'], listFiles, raster_priorities, vector_priorities)
+                suitor = chooseFileFromLayerPath(
+                    layer['path'], listFiles, raster_priorities, vector_priorities)
             except ValueError as err:
-                feedback.reportError('Layer '+ err.args[1] + ' not found in the folder.')
+                feedback.reportError(
+                    'Layer ' + err.args[1] + ' not found in the folder.')
                 continue
 
-            qgsLayer = createLayer(suitor, folder, layer, crs)
+            qgsLayer = createLayer(suitor, folder, layer, crs, feedback)
 
             if(qgsLayer):
                 outputLayers[layer['layerName']] = qgsLayer
 
         feedback.pushInfo("there is {} valid layers".format(len(outputLayers)))
         loadLayersOnCompletion(outputLayers, context)
-            
+
         return outputLayers
 
     def name(self):

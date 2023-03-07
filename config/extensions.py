@@ -3,4 +3,4 @@ VECTOR = 'vector'
 
 rasters = ['.jpg', '.jpeg', '.tif', '.png']
 
-vectors = ['.csv', '.tab']
+vectors = [".grd",'.csv', '.tab']
