@@ -1,7 +1,6 @@
 from qgis.core import (QgsProcessingContext, QgsRasterLayer, QgsVectorLayer)
 import os
-from ..config.extensions import rasters, vectors, RASTER, VECTOR
-from .projectService import projectService
+from ..config.extensions import RASTER, VECTOR
 
 def createLayer(suitor, folder, layer, crs):
     path = os.path.join(folder, suitor['file'])
@@ -27,8 +26,10 @@ def getFilesList(folder: str) -> list[str]:
             listFiles.append(os.path.relpath(path, folder))
     return listFiles
 
-def chooseFileFromLayerPath(path: str, files: list[str]) -> object:
+def chooseFileFromLayerPath(path: str, files: list[str], raster_priorities: str, vector_priorities: str) -> object:
     listSuitors = []
+    rasters = raster_priorities.split(',')
+    vectors = vector_priorities.split(',')
     allExtensions = rasters + vectors
     for file in files:
         if file.__contains__(path):
