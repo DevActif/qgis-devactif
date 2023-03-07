@@ -33,6 +33,7 @@ __revision__ = '$Format:%H$'
 import os
 from qgis.PyQt.QtCore import QCoreApplication
 from qgis.core import (
+    QgsProcessingParameterString,
     QgsProcessingMultiStepFeedback,
     QgsProcessingParameterCrs,
     QgsProcessingParameterFile,
@@ -40,10 +41,13 @@ from qgis.core import (
 from .services.worService import readLayersFromWor
 from .services.projectService import projectService
 from .services.layerService import loadLayersOnCompletion, getFilesList, chooseFileFromLayerPath, createLayer
+from .config.extensions import rasters, vectors
 
 class OpenWorAlgorithm(QgsProcessingAlgorithm):
     INPUT = 'Input'
     CRS = 'CRS'
+    PRIORITY_RASTER = 'Priority Raster'
+    PRIORITY_VECTOR = 'Priority Vector'
 
     def initAlgorithm(self, config=None):
 
@@ -62,6 +66,22 @@ class OpenWorAlgorithm(QgsProcessingAlgorithm):
             )
         )
 
+        self.addParameter(
+            QgsProcessingParameterString(
+                self.PRIORITY_RASTER,
+                self.tr('Raster extension priorities *Raster extensions always have priority and must be separated with a comma (Example: .jpg,.tif)'),
+                ",".join(rasters)
+            )
+        )
+
+        self.addParameter(
+            QgsProcessingParameterString(
+                self.PRIORITY_VECTOR,
+                self.tr('Vector extension priorities *Vector extensions must be separated with a comma (Example: .csv,.tab)'),
+                ",".join(vectors)
+            )
+        )
+
     def processAlgorithm(self, parameters, context, model_feedback):
         feedback = QgsProcessingMultiStepFeedback(2, model_feedback)
         prjService = projectService(context.project())
@@ -69,6 +89,8 @@ class OpenWorAlgorithm(QgsProcessingAlgorithm):
         feedback.setCurrentStep(0)
         worFile = self.parameterAsFile(parameters, self.INPUT, context)
         crs = self.parameterAsCrs(parameters, self.CRS, context)
+        raster_priorities = self.parameterAsString(parameters, self.PRIORITY_RASTER, context)
+        vector_priorities = self.parameterAsString(parameters, self.PRIORITY_VECTOR, context)
 
         folder = os.path.dirname(worFile)
         feedback.setProgressText("Reading layers from wor file")
@@ -98,7 +120,7 @@ class OpenWorAlgorithm(QgsProcessingAlgorithm):
             currentLayer += 1
 
             try:
-                suitor = chooseFileFromLayerPath(layer['path'], listFiles)
+                suitor = chooseFileFromLayerPath(layer['path'], listFiles, raster_priorities, vector_priorities)
             except ValueError as err:
                 feedback.reportError('Layer '+ err.args[1] + ' not found in the folder.')
                 continue
