@@ -159,3 +159,11 @@ class OpenWorAlgorithm(QgsProcessingAlgorithm):
 
     def createInstance(self):
         return OpenWorAlgorithm()
+
+    def shortHelpString(self):
+        """
+        Returns a localised short helper string for the algorithm. This string
+        should provide a basic description about what the algorithm does and the
+        parameters and outputs associated with it..
+        """
+        return self.tr("Open each layer listed in a .wor file")

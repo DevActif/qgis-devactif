@@ -95,4 +95,4 @@ class DevActifProvider(QgsProcessingProvider):
         (version 2.2.1)". This string should be localised. The default
         implementation returns the same string as name().
         """
-        return "Devactif set of processing algorithms version 2.1"
+        return "Devactif set of processing algorithms version 2.2"

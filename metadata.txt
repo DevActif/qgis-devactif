@@ -7,11 +7,11 @@
 name=DevActif processing provider
 qgisMinimumVersion=3.8
 description=Provides DevActif processing algotithms. Open wor, correct elevation
-version=2.1
+version=2.2
 author=DevActif
 email=info@devactif.ca
 
-about=Software experts at your service
+about=This is a processing toolbox algorithms provider. There is two algorithms included: Open wor and correct elevation
 
 tracker=https://github.com/DevActif/qgis-devactif/issues
 repository=https://github.com/DevActif/qgis-devactif
@@ -26,7 +26,7 @@ hasProcessingProvider=yes
 # Tags are comma separated with spaces allowed
 tags=wor, Workspace, Mapinfo, CoordSys, processing
 
-homepage=https://devactif.ca/
+homepage=https://github.com/DevActif/qgis-devactif
 # category=Analysis
 icon=logo.png
 # experimental flag
