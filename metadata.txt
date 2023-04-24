@@ -7,7 +7,7 @@
 name=DevActif processing provider
 qgisMinimumVersion=3.8
 description=Provides DevActif processing algotithms. Open wor, correct elevation
-version=2.0
+version=2.1
 author=DevActif
 email=info@devactif.ca
 

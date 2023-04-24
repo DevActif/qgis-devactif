@@ -34,7 +34,6 @@ import os
 from qgis.core import QgsProcessingProvider
 from qgis.PyQt.QtGui import QIcon
 from .correct_elevation import CorrectElevationFromGrade
-from .crs_from_wor_algorithm import CrsFromWorAlgorithm
 from .open_wor_algorithm import OpenWorAlgorithm
 
 
@@ -58,7 +57,6 @@ class DevActifProvider(QgsProcessingProvider):
         Loads all algorithms belonging to this provider.
         """
         self.addAlgorithm(OpenWorAlgorithm())
-        # self.addAlgorithm(CrsFromWorAlgorithm())
         self.addAlgorithm(CorrectElevationFromGrade())
         # add additional algorithms here
         # self.addAlgorithm(MyOtherAlgorithm())
@@ -97,4 +95,4 @@ class DevActifProvider(QgsProcessingProvider):
         (version 2.2.1)". This string should be localised. The default
         implementation returns the same string as name().
         """
-        return self.name()
+        return "Devactif set of processing algorithms version 2.1"
